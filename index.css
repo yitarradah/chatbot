@@ -9,9 +9,9 @@
     font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   }
   
-  /* تحسين عرض النص العربي */
-  [dir="rtl"] {
-    font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+  /* تحسين عرض النص العربي والخطوط */
+  [dir="rtl"], .rtl {
+    font-family: 'Noto Sans Arabic', 'Inter', sans-serif !important;
   }
 }
 
@@ -45,12 +45,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* تحسينات إضافية للفقاعات */
 .message-bubble {
   position: relative;
   transition: all 0.2s ease;
 }
 
-.message-bubble:hover {
-  transform: translateY(-2px);
+/* لضمان بقاء النص العربي على اليمين حتى لو كانت الواجهة إنجليزية */
+.text-auto {
+  text-align: start;
+  unicode-bidi: plaintext;
 }
