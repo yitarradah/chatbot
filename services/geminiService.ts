@@ -6,6 +6,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { KnowledgeBase, ChatMessage } from '../types';
 
+declare const process: {
+    env: {
+        API_KEY: string;
+    };
+};
+
 const MODELS = [
     'gemini-3-flash-preview',
     'gemini-3-pro-preview'
