@@ -70,7 +70,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ databases, activeDbId, se
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
                 role: 'model',
-                text: lang === 'AR' ? `حدث خطأ: ${error.message}` : `Error: ${error.message}`,
+                text: lang === 'AR' ? `خطأ: يرجى التحقق من اتصال الإنترنت أو مفتاح API.` : `Error: Please check your connection or API key.`,
                 citations: [],
                 timestamp: Date.now()
             }]);
@@ -94,148 +94,160 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ databases, activeDbId, se
         const fullText = `${lang === 'AR' ? 'السؤال' : 'Question'}: ${questionText}\n\n${lang === 'AR' ? 'الإجابة' : 'Answer'}: ${modelMessage.text}`;
         navigator.clipboard.writeText(fullText);
         
-        // Brief feedback
         const notification = document.createElement('div');
-        notification.innerText = lang === 'AR' ? 'تم نسخ السؤال والإجابة' : 'Copied Q&A pair';
-        notification.className = "fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold animate-fade-in z-[100]";
+        notification.innerText = lang === 'AR' ? 'تم النسخ' : 'Copied';
+        notification.className = "fixed bottom-24 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-bold animate-fade-in z-[100] shadow-lg";
         document.body.appendChild(notification);
         setTimeout(() => notification.remove(), 2000);
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] w-full max-w-full overflow-hidden">
-            {/* Top Bar */}
-            <div className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 shrink-0">
+        <div className="flex flex-col h-full bg-[#fcfdfe] w-full max-w-full overflow-hidden">
+            {/* Context Header */}
+            <div className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 shrink-0 shadow-sm z-10">
                 <div className="flex items-center flex-1 min-w-0">
-                    <div className="relative group w-full max-w-[200px] md:max-w-[280px]">
+                    <div className="relative group w-full max-w-[200px] md:max-w-[320px]">
                         <select 
                             value={activeDbId || ''} 
                             onChange={(e) => setActiveDbId(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 text-xs md:text-sm font-bold text-slate-700 appearance-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer truncate"
+                            className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-3 pr-8 py-2 text-xs md:text-sm font-bold text-slate-800 appearance-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer truncate shadow-sm"
                         >
-                            <option value="" disabled>{lang === 'AR' ? 'اختر قاعدة المعرفة' : 'Select Knowledge Base'}</option>
+                            <option value="" disabled>{lang === 'AR' ? 'اختر المستندات' : 'Select Documents'}</option>
                             {databases.map(db => (
                                 <option key={db.id} value={db.id}>{db.name}</option>
                             ))}
                         </select>
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4" /></svg>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
                         </div>
                     </div>
                 </div>
 
                 {activeDb && (
-                    <div className="flex items-center space-x-3 md:space-x-6 rtl:space-x-reverse text-[10px] md:text-xs font-bold text-slate-400 uppercase shrink-0">
-                        <div className="hidden sm:flex items-center space-x-1.5 rtl:space-x-reverse">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                            <span>{activeDb.files.length}</span>
+                    <div className="flex items-center space-x-2 md:space-x-4 rtl:space-x-reverse shrink-0">
+                        <div className="hidden sm:flex bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-200">
+                           {activeDb.files.length} FILES
                         </div>
-                        <div className="bg-blue-50 text-blue-600 px-2 md:px-3 py-1 rounded-md border border-blue-100 flex items-center space-x-1 md:space-x-1.5">
-                            <svg className="w-3 md:w-3.5 h-3 md:h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M11 2v20c-5.07 0-9.22-3.8-9.92-8.74L1 13.02V10.98l.08-.24C1.78 5.8 5.93 2 11 2zm2 0c5.07 0 9.22 3.8 9.92 8.74l.08.24v2.04l-.08.24C22.22 18.2 18.07 22 13 22V2z" /></svg>
-                            <span className="tracking-widest hidden xs:inline uppercase">{activeDb.preferredModel.split('-')[0]}</span>
+                        <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md shadow-blue-100">
+                           REASONING ON
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 md:py-10 custom-scrollbar w-full">
-                <div className="max-w-4xl mx-auto space-y-8">
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 md:py-10 custom-scrollbar w-full scroll-smooth">
+                <div className="max-w-4xl mx-auto space-y-10">
                     {!activeDbId ? (
-                        <div className="flex flex-col items-center justify-center pt-20 text-slate-200">
-                            <div className="p-8 bg-white rounded-full border border-slate-100 shadow-sm mb-6">
-                                <svg className="w-20 h-20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        <div className="flex flex-col items-center justify-center pt-24 text-center">
+                            <div className="w-24 h-24 bg-white rounded-[2.5rem] border border-gray-100 shadow-xl flex items-center justify-center mb-8 animate-bounce">
+                                <svg className="w-12 h-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             </div>
-                            <p className="text-xl font-black uppercase tracking-[0.2em] text-slate-300">
-                                {lang === 'AR' ? 'اختر قاعدة معرفة للبدء' : 'Select Knowledge Base'}
+                            <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                                {lang === 'AR' ? 'ابدأ بتحليل مستنداتك' : 'Begin Analyzing Documents'}
+                            </h2>
+                            <p className="text-slate-400 font-bold mt-2 uppercase tracking-[0.2em] text-xs">
+                                {lang === 'AR' ? 'اختر قاعدة معرفة من القائمة أعلاه' : 'Select a knowledge base above to start'}
                             </p>
                         </div>
                     ) : (
                         messages.map((m) => (
                             <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'} animate-slide-up w-full`}>
-                                <div className={`relative px-5 md:px-7 py-4 md:py-5 rounded-2xl md:rounded-[2rem] shadow-sm max-w-[95%] sm:max-w-[85%] md:max-w-[75%] ${
+                                <div className={`relative px-6 py-5 rounded-3xl shadow-sm max-w-[95%] sm:max-w-[85%] md:max-w-[80%] ${
                                     m.role === 'user' 
-                                    ? 'bg-[#0f172a] text-white rounded-tr-none' 
-                                    : 'bg-white text-slate-800 border border-gray-100 rounded-tl-none ring-1 ring-gray-100/50'
+                                    ? 'bg-slate-900 text-white rounded-tr-none' 
+                                    : 'bg-white text-slate-800 border border-gray-100 rounded-tl-none ring-1 ring-gray-100/30'
                                 }`}>
                                     <p className={`text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium ${lang === 'AR' ? 'text-right' : 'text-left'}`}>
                                         {m.text}
                                     </p>
 
                                     {m.role === 'model' && (
-                                        <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col space-y-3">
+                                        <div className="mt-6 pt-5 border-t border-slate-50 flex flex-col space-y-4">
                                             {m.citations.length > 0 && (
-                                                <div className="flex flex-wrap gap-1.5">
+                                                <div className="flex flex-wrap gap-2">
                                                     {m.citations.map(c => (
-                                                        <span key={c} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded text-[10px] font-bold">
-                                                            {c}
+                                                        <span key={c} className="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-lg text-[10px] font-black uppercase">
+                                                            📄 {c}
                                                         </span>
                                                     ))}
                                                 </div>
                                             )}
                                             
                                             <div className="flex items-center justify-between rtl:flex-row-reverse">
-                                                <div className="flex items-center space-x-2 rtl:space-x-reverse text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                                                    <span className="bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 truncate">{m.modelName?.replace('gemini-', '')}</span>
-                                                    <span>{m.tokens?.input}/{m.tokens?.output} toks</span>
+                                                <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                                    <span className="bg-slate-50 text-slate-400 px-2 py-1 rounded-md border border-slate-100 text-[9px] font-black tracking-widest uppercase">
+                                                        {m.modelName?.replace('gemini-', '')}
+                                                    </span>
+                                                    <span className="text-[9px] font-black text-slate-300 tracking-widest uppercase">
+                                                        {m.tokens?.input}/{m.tokens?.output} TOKS
+                                                    </span>
                                                 </div>
                                                 <button 
                                                     onClick={() => copyResponsePair(m)}
-                                                    className="flex items-center space-x-1.5 p-1.5 text-slate-300 hover:text-blue-500 transition-all rounded-lg hover:bg-blue-50"
-                                                    title={lang === 'AR' ? 'نسخ السؤال والإجابة' : 'Copy Question & Answer'}
+                                                    className="p-2 text-slate-300 hover:text-blue-600 transition-all rounded-xl hover:bg-blue-50"
                                                 >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                                                    <span className="text-[10px] font-bold hidden sm:inline uppercase">{lang === 'AR' ? 'نسخ' : 'COPY'}</span>
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                                                 </button>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                                <div className={`mt-2 px-3 text-[9px] font-bold text-slate-300 uppercase tracking-widest ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                <div className={`mt-2 px-4 text-[9px] font-black text-slate-300 uppercase tracking-widest ${m.role === 'user' ? 'text-right' : 'text-left'}`}>
                                     {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
                         ))
                     )}
+                    
                     {isTyping && (
-                        <div className="flex justify-start">
-                            <div className="bg-white border border-gray-100 px-6 py-4 rounded-2xl rounded-tl-none flex items-center space-x-3 shadow-sm rtl:space-x-reverse">
-                                <Spinner />
-                                <span className="text-xs font-black text-blue-500 uppercase tracking-widest animate-pulse">
-                                    {lang === 'AR' ? 'جاري فحص قاعدة المعرفة...' : 'Consulting documents...'}
-                                </span>
+                        <div className="flex justify-start animate-pulse">
+                            <div className="bg-white border border-blue-100 px-8 py-5 rounded-3xl rounded-tl-none flex items-center space-x-4 shadow-lg shadow-blue-50/50 rtl:space-x-reverse">
+                                <div className="relative">
+                                    <div className="w-6 h-6 border-2 border-blue-100 rounded-full animate-ping absolute" />
+                                    <Spinner />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-black text-blue-600 uppercase tracking-[0.2em]">
+                                        {lang === 'AR' ? 'جاري التحليل المنطقي...' : 'Thinking Deeply...'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                                        {lang === 'AR' ? 'البحث في المستندات' : 'Querying Knowledge Base'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}
-                    <div ref={endRef} className="h-6" />
+                    <div ref={endRef} className="h-10" />
                 </div>
             </div>
 
-            {/* Input */}
-            <div className="px-4 md:px-8 py-6 bg-white border-t border-gray-100">
-                <div className="max-w-5xl mx-auto flex items-center space-x-2 md:space-x-4 rtl:space-x-reverse">
+            {/* Input Form */}
+            <div className="px-4 md:px-8 py-8 bg-white border-t border-gray-100 shadow-2xl">
+                <div className="max-w-5xl mx-auto flex items-center space-x-3 md:space-x-5 rtl:space-x-reverse">
                     <button 
-                        onClick={() => { if(confirm(lang === 'AR' ? 'حذف المحادثة؟' : 'Clear chat history?')) setMessages([])}} 
-                        className="p-3.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all border border-transparent shrink-0"
+                        onClick={() => { if(confirm(lang === 'AR' ? 'مسح المحادثة؟' : 'Reset this session?')) setMessages([])}} 
+                        className="p-4 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all border border-transparent shrink-0"
+                        title="Clear History"
                     >
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                     <form onSubmit={handleSend} className="flex-1 relative flex items-center min-w-0">
                         <input 
                             type="text" 
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder={lang === 'AR' ? 'اكتب استفسارك هنا...' : 'Ask a question about your files...'}
+                            placeholder={lang === 'AR' ? 'اطرح سؤالاً عن ملفاتك...' : 'Ask about your manuals...'}
                             disabled={!activeDbId || isTyping}
-                            className={`w-full bg-[#f8fafc] border border-slate-200 rounded-2xl py-4 md:py-5 px-6 md:px-8 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all text-slate-800 font-bold placeholder:text-slate-300 text-sm md:text-lg ${lang === 'AR' ? 'text-right pl-16' : 'text-left pr-16'}`}
+                            className={`w-full bg-slate-50 border-2 border-slate-100 rounded-3xl py-4 md:py-5 px-8 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 focus:bg-white transition-all text-slate-800 font-bold placeholder:text-slate-300 text-sm md:text-lg shadow-sm ${lang === 'AR' ? 'text-right pl-20' : 'text-left pr-20'}`}
                         />
                         <button 
                             type="submit" 
                             disabled={!query.trim() || isTyping || !activeDbId}
-                            className={`absolute top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-slate-200 disabled:shadow-none transition-all active:scale-95 ${lang === 'AR' ? 'left-3' : 'right-3'}`}
+                            className={`absolute top-1/2 -translate-y-1/2 p-3.5 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-200 disabled:shadow-none transition-all active:scale-90 ${lang === 'AR' ? 'left-3' : 'right-3'}`}
                         >
                             <svg className={`w-6 h-6 ${lang === 'AR' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                                <path d="M13 5l7 7-7 7" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7-7 7M5 12h14" />
                             </svg>
                         </button>
                     </form>

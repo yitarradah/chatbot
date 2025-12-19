@@ -5,7 +5,7 @@
 */
 
 import React, { useState, useEffect } from 'react';
-import { KnowledgeBase, AppView, ApiStatus, Language, SystemConfig, AdminUser } from './types';
+import { KnowledgeBase, AppView, ApiStatus, Language, SystemConfig } from './types';
 import * as geminiService from './services/geminiService';
 import Navbar from './components/Navbar';
 import AdminDashboard from './components/AdminDashboard';
@@ -15,6 +15,10 @@ import LoginScreen from './components/LoginScreen';
 const STORAGE_KEY_KB = 'gemini_rag_kb';
 const STORAGE_KEY_CONFIG = 'gemini_rag_config';
 
+// Fallback credentials if Env Vars aren't set
+const DEFAULT_USER = 'admin';
+const DEFAULT_PASS = 'admin123';
+
 const App: React.FC = () => {
     const [view, setView] = useState<AppView>(AppView.Chat); 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,9 +27,9 @@ const App: React.FC = () => {
     const [databases, setDatabases] = useState<KnowledgeBase[]>([]);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
     const [config, setConfig] = useState<SystemConfig>({
-        systemName: 'Gemini RAG',
+        systemName: 'Manual Assistant AI',
         defaultKbId: null,
-        admins: [{ id: '1', username: 'admin123', password: 'admin123' }]
+        admins: [{ id: '1', username: DEFAULT_USER, password: DEFAULT_PASS }]
     });
 
     useEffect(() => {
@@ -42,11 +46,7 @@ const App: React.FC = () => {
         if (savedConfig) {
             try {
                 const parsedConfig = JSON.parse(savedConfig);
-                // Ensure admins array exists even if old config is loaded
-                if (!parsedConfig.admins) {
-                    parsedConfig.admins = [{ id: '1', username: 'admin123', password: 'admin123' }];
-                }
-                setConfig(parsedConfig);
+                setConfig(prev => ({ ...prev, ...parsedConfig }));
                 if (parsedConfig.defaultKbId) {
                     setActiveDbId(parsedConfig.defaultKbId);
                 }
@@ -55,19 +55,18 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!activeDbId && config.defaultKbId && databases.some(db => db.id === config.defaultKbId)) {
-            setActiveDbId(config.defaultKbId);
-        } else if (!activeDbId && databases.length > 0) {
+        if (!activeDbId && databases.length > 0) {
             setActiveDbId(databases[0].id);
         }
-    }, [databases, config.defaultKbId]);
+    }, [databases]);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_KB, JSON.stringify(databases));
     }, [databases]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
+        const { admins, ...serializableConfig } = config;
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(serializableConfig));
     }, [config]);
 
     useEffect(() => {
@@ -76,13 +75,19 @@ const App: React.FC = () => {
             setApiStatus(online ? ApiStatus.Functional : ApiStatus.Disrupted);
         };
         check();
-        const timer = setInterval(check, 30000);
+        const timer = setInterval(check, 60000);
         return () => clearInterval(timer);
     }, []);
 
     const handleLogin = (u: string, p: string) => {
-        const adminFound = config.admins.find(admin => admin.username === u && admin.password === p);
-        if (adminFound) {
+        // Check against both environment variables and the local config list
+        const envUser = process.env.ADMIN_USER || DEFAULT_USER;
+        const envPass = process.env.ADMIN_PASS || DEFAULT_PASS;
+
+        const isAdmin = (u === envUser && p === envPass) || 
+                        config.admins.some(admin => admin.username === u && admin.password === p);
+
+        if (isAdmin) {
             setIsAuthenticated(true);
             setView(AppView.Admin);
         } else {
@@ -97,7 +102,7 @@ const App: React.FC = () => {
 
     return (
         <div 
-            className={`min-h-screen bg-[#f8fafc] flex flex-col font-sans transition-all duration-300 ${lang === 'AR' ? 'rtl' : 'ltr'}`} 
+            className={`min-h-screen bg-[#fcfdfe] flex flex-col font-sans transition-all duration-500 ${lang === 'AR' ? 'rtl' : 'ltr'}`} 
             dir={lang === 'AR' ? 'rtl' : 'ltr'}
         >
             <Navbar 

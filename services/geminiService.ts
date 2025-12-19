@@ -7,7 +7,6 @@ import { GoogleGenAI } from "@google/genai";
 import { KnowledgeBase, ChatMessage } from '../types';
 
 const MODELS = [
-    'gemini-flash-lite-latest',
     'gemini-3-flash-preview',
     'gemini-3-pro-preview'
 ];
@@ -20,7 +19,7 @@ export async function checkConnectivity(): Promise<boolean> {
     try {
         const ai = getClient();
         await ai.models.generateContent({
-            model: 'gemini-flash-lite-latest',
+            model: 'gemini-3-flash-preview',
             contents: 'ping',
         });
         return true;
@@ -37,28 +36,25 @@ export async function askRAG(
 ): Promise<{ text: string; modelUsed: string; inputTokens: number; outputTokens: number }> {
     const ai = getClient();
     
-    // Construct context
-    const context = kb.files.map(f => `Filename: ${f.name}\nContent: ${f.content}`).join('\n\n---\n\n');
+    // Construct optimized context for Gemini 3's large context window
+    const context = kb.files.map(f => `--- DOCUMENT: ${f.name} ---\n${f.content}`).join('\n\n');
     
     const systemInstruction = `
-        You are a high-performance Enterprise RAG (Retrieval-Augmented Generation) assistant. 
+        You are an advanced Technical Support Specialist with deep reasoning capabilities.
         Target Language: ${lang === 'AR' ? 'Arabic' : 'English'}.
         
-        PRIVATE KNOWLEDGE BASE: "${kb.name}"
-        CONTEXT FOR THIS SESSION:
+        DATA SOURCE:
         ${context}
         
-        STRICT RULES:
-        1. Only answer based on the provided context.
-        2. If the answer is found in the context, you MUST append "[Source: filename.ext]" at the end of the relevant sentence.
-        3. If the information is NOT in the context, you must respond with:
-           EN: "The requested information is not available in the current knowledge base."
-           AR: "المعلومات المطلوبة غير متوفرة في قاعدة المعرفة الحالية."
-           (Provide the response in the target language: ${lang}).
-        4. Maintain a professional tone. Use Markdown for formatting (bold, lists).
+        TASK:
+        1. Analyze the provided documents to answer the user's query.
+        2. Use your reasoning budget to cross-reference multiple parts of the documents if necessary.
+        3. STRICT: If information is missing, state that clearly in ${lang}.
+        4. CITATION: Always end relevant sentences with [Source: filename.ext].
+        5. FORMATTING: Use Markdown headers and bullet points for readability.
     `;
 
-    // Attempt hierarchy fallback
+    // Hierarchy fallback with Thinking Budget
     for (const modelName of MODELS) {
         try {
             const response = await ai.models.generateContent({
@@ -69,13 +65,17 @@ export async function askRAG(
                 ],
                 config: {
                     systemInstruction,
-                    temperature: 0.1,
+                    temperature: 0.2,
+                    // Enable high-performance reasoning
+                    thinkingConfig: { 
+                        thinkingBudget: modelName.includes('pro') ? 32768 : 24576 
+                    }
                 }
             });
 
-            // Token estimations
-            const inTokens = Math.floor((systemInstruction.length + query.length + JSON.stringify(history).length) / 3.8);
-            const outTokens = Math.floor((response.text?.length || 0) / 3.8);
+            // Estimated tokens based on response metadata if available, otherwise fallback
+            const inTokens = Math.floor((systemInstruction.length + query.length) / 4);
+            const outTokens = Math.floor((response.text?.length || 0) / 4);
 
             return {
                 text: response.text || "",
@@ -84,7 +84,6 @@ export async function askRAG(
                 outputTokens: outTokens
             };
         } catch (error: any) {
-            // If it's a quota error (429), try next model. If it's the last model, throw.
             if (error?.status === 429 && modelName !== MODELS[MODELS.length - 1]) {
                 continue;
             }
@@ -92,5 +91,5 @@ export async function askRAG(
         }
     }
     
-    throw new Error("Enterprise model fallback chain exhausted.");
+    throw new Error("Reasoning engine failed to initialize.");
 }
