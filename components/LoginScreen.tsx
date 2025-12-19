@@ -1,4 +1,8 @@
 
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
 import React, { useState } from 'react';
 import { Language } from '../types';
 
@@ -11,14 +15,36 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, lang }) => {
     const [u, setU] = useState('');
     const [p, setP] = useState('');
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (u.trim() && p.trim()) {
+            onLogin(u, p);
+        }
+    };
+
     const t = {
-        EN: { title: 'Admin Control Center', u: 'Username', p: 'Password', btn: 'Authenticate' },
-        AR: { title: 'مركز تحكم المسؤول', u: 'اسم المستخدم', p: 'كلمة المرور', btn: 'تسجيل الدخول' }
+        EN: { 
+            title: 'Admin Control Center', 
+            u: 'Username', 
+            p: 'Password', 
+            btn: 'Authenticate',
+            hint: 'Default: admin / admin123'
+        },
+        AR: { 
+            title: 'مركز تحكم المسؤول', 
+            u: 'اسم المستخدم', 
+            p: 'كلمة المرور', 
+            btn: 'تسجيل الدخول',
+            hint: 'الافتراضي: admin / admin123'
+        }
     };
 
     return (
         <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
-            <div className="w-full max-w-md bg-white p-10 rounded-3xl border border-gray-100 shadow-xl space-y-8 animate-slide-up">
+            <form 
+                onSubmit={handleSubmit}
+                className="w-full max-w-md bg-white p-10 rounded-3xl border border-gray-100 shadow-xl space-y-8 animate-slide-up"
+            >
                 <div className="text-center">
                     <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
                         <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -31,10 +57,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, lang }) => {
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block">{t[lang].u}</label>
                         <input 
                             type="text" 
+                            autoFocus
                             value={u} 
                             onChange={e=>setU(e.target.value)} 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold ${lang === 'AR' ? 'text-right' : 'text-left'}`}
                             placeholder={lang === 'AR' ? 'أدخل اسم المستخدم' : 'Enter username'}
+                            required
                         />
                     </div>
                     <div className="space-y-2">
@@ -43,19 +71,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, lang }) => {
                             type="password" 
                             value={p} 
                             onChange={e=>setP(e.target.value)} 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold ${lang === 'AR' ? 'text-right' : 'text-left'}`}
                             placeholder={lang === 'AR' ? 'أدخل كلمة المرور' : 'Enter password'}
+                            required
                         />
                     </div>
                 </div>
 
-                <button 
-                    onClick={() => onLogin(u, p)}
-                    className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all text-lg"
-                >
-                    {t[lang].btn}
-                </button>
-            </div>
+                <div className="space-y-4">
+                    <button 
+                        type="submit"
+                        className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all text-lg"
+                    >
+                        {t[lang].btn}
+                    </button>
+                    
+                    <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        {t[lang].hint}
+                    </p>
+                </div>
+            </form>
         </div>
     );
 };

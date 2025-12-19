@@ -6,11 +6,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { KnowledgeBase, ChatMessage } from '../types';
 
-declare const process: {
-    env: {
-        API_KEY: string;
-    };
-};
+// Use any for process to avoid type pollution in shared compilation contexts
+declare const process: any;
 
 const MODELS = [
     'gemini-3-flash-preview',
@@ -34,6 +31,18 @@ export async function checkConnectivity(): Promise<boolean> {
     }
 }
 
+const isNativeBinary = (mime: string) => {
+    const supported = [
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'image/heic',
+        'image/heif'
+    ];
+    return supported.includes(mime) || mime.startsWith('image/');
+};
+
 export async function askRAG(
     kb: KnowledgeBase, 
     query: string, 
@@ -42,60 +51,93 @@ export async function askRAG(
 ): Promise<{ text: string; modelUsed: string; inputTokens: number; outputTokens: number }> {
     const ai = getClient();
     
-    // Construct optimized context for Gemini 3's large context window
-    const context = kb.files.map(f => `--- DOCUMENT: ${f.name} ---\n${f.content}`).join('\n\n');
-    
+    const docParts = kb.files.map(f => {
+        if (f.data && isNativeBinary(f.mimeType)) {
+            return {
+                inlineData: {
+                    data: f.data,
+                    mimeType: f.mimeType
+                }
+            };
+        }
+        
+        const textContent = f.content || `[Binary File metadata: ${f.name}]`;
+        const wrapType = f.name.endsWith('.csv') ? 'CSV DATA' : 'DOCUMENT';
+        
+        return { 
+            text: `--- ${wrapType} START: ${f.name} ---\n${textContent}\n--- ${wrapType} END ---\n` 
+        };
+    });
+
+    const isArabicRequest = lang === 'AR' || /[\u0600-\u06FF]/.test(query);
+
+    // Use systemInstruction in config as per @google/genai guidelines
     const systemInstruction = `
-        You are an elite Technical Support Engineer and Document Analyst.
-        Target Language: ${lang === 'AR' ? 'Arabic' : 'English'}.
+        You are a highly advanced Enterprise Document Intelligence Engine.
+        Context: You have access to ${kb.files.length} document parts from database "${kb.name}".
         
-        CONTEXT DATA:
-        ${context}
-        
-        INSTRUCTIONS:
-        1. Base your answer ONLY on the provided documents.
-        2. If the answer is not in the documents, state that you cannot find it in the specific manuals provided.
-        3. Use Markdown for formatting (bolding, lists, headers).
-        4. CITATION RULE: Whenever you state a fact from a file, append [Source: filename] at the end of the sentence.
-        5. TONE: Professional, helpful, and concise.
+        CRITICAL MANDATORY RULES:
+        1. LANGUAGE ENFORCEMENT: ${isArabicRequest 
+            ? "The user is asking in ARABIC. You MUST respond in professional, native ARABIC only. Translate technical info from the documents into Arabic."
+            : "The user is asking in ENGLISH. Respond in professional ENGLISH."
+        }
+        2. SOURCE LANGUAGE: Even if the source documents are in English, you must translate relevant info into the response language (${isArabicRequest ? 'Arabic' : 'English'}).
+        3. CITATIONS: Append [Source: Filename] at the end of every sentence containing factual data.
+        4. ACCURACY: Answer ONLY based on the documents.
+        5. FORMATTING: Use markdown for tables and bold terms.
     `;
 
-    // Hierarchy fallback with Thinking Budget
-    for (const modelName of MODELS) {
+    // Attempt preferred model first, then fall back to defaults for robustness
+    const modelAttempts = kb.preferredModel ? [kb.preferredModel, ...MODELS.filter(m => m !== kb.preferredModel)] : MODELS;
+
+    for (const modelName of modelAttempts) {
         try {
+            // Updated thinking budget logic: Thinking Config is only for Gemini 3 and 2.5 series
+            const isThinkingSupported = modelName.includes('gemini-3') || modelName.includes('gemini-2.5');
+            const thinkingConfig = isThinkingSupported ? { 
+                thinkingBudget: modelName.includes('pro') ? 32768 : 24576 
+            } : undefined;
+
             const response = await ai.models.generateContent({
                 model: modelName,
                 contents: [
-                    ...history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-                    { role: 'user', parts: [{ text: query }] }
+                    { 
+                        role: 'user', 
+                        parts: [
+                            ...docParts,
+                            ...history.slice(-6).map(h => ({ 
+                                text: `${h.role === 'user' ? 'Previous Question' : 'Previous Answer'}: ${h.text}` 
+                            })),
+                            { text: `Current User Query: ${query}` }
+                        ] 
+                    }
                 ],
                 config: {
                     systemInstruction,
-                    temperature: 0.1, // Low temperature for high factual accuracy
-                    thinkingConfig: { 
-                        thinkingBudget: modelName.includes('pro') ? 32768 : 24576 
-                    }
+                    temperature: 0.1,
+                    thinkingConfig
                 }
             });
 
-            // Estimated tokens
-            const inTokens = Math.floor((systemInstruction.length + query.length) / 4);
-            const outTokens = Math.floor((response.text?.length || 0) / 4);
+            // Access .text property directly (not a method)
+            const text = response.text || "";
+            
+            // Estimating tokens
+            const docLength = kb.files.reduce((acc, f) => acc + (f.content?.length || 5000), 0);
+            const inTokens = Math.floor((systemInstruction.length + query.length + docLength) / 4);
+            const outTokens = Math.floor(text.length / 4);
 
             return {
-                text: response.text || "",
+                text,
                 modelUsed: modelName,
                 inputTokens: inTokens,
                 outputTokens: outTokens
             };
         } catch (error: any) {
-            // If rate limited, try next model
-            if (error?.status === 429 && modelName !== MODELS[MODELS.length - 1]) {
-                continue;
-            }
-            throw error;
+            console.error(`Error with model ${modelName}:`, error);
+            if (modelName === modelAttempts[modelAttempts.length - 1]) throw error;
         }
     }
     
-    throw new Error("Analysis engine failed to initialize.");
+    throw new Error("Analysis failed.");
 }

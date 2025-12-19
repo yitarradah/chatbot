@@ -9,10 +9,10 @@ export type Language = 'EN' | 'AR';
 export interface StoredFile {
     id: string;
     name: string;
-    content: string;
+    content?: string;   // For text-based files (CSV, TXT, MD)
+    data?: string;      // Base64 for binary files (PDF, Images)
+    mimeType: string;
     size: number;
-    type: string;
-    chars: number;
     uploadedAt: string;
 }
 
@@ -36,6 +36,7 @@ export interface ChatMessage {
     role: 'user' | 'model';
     text: string;
     modelName?: string;
+    kbName?: string; // Tracks which database provided the answer
     tokens?: { input: number; output: number };
     citations: string[];
     timestamp: number;

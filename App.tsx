@@ -24,40 +24,44 @@ const App: React.FC = () => {
     const [apiStatus, setApiStatus] = useState<ApiStatus>(ApiStatus.Checking);
     const [databases, setDatabases] = useState<KnowledgeBase[]>([]);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
-    const [config, setConfig] = useState<SystemConfig>({
-        systemName: 'Manual Assistant AI',
-        defaultKbId: null,
-        admins: [{ id: '1', username: DEFAULT_USER, password: DEFAULT_PASS }]
+    const [config, setConfig] = useState<SystemConfig>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
+        if (saved) {
+            try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        }
+        return {
+            systemName: 'Manual Assistant AI',
+            defaultKbId: null,
+            admins: [{ id: '1', username: DEFAULT_USER, password: DEFAULT_PASS }]
+        };
     });
 
     useEffect(() => {
         const savedKb = localStorage.getItem(STORAGE_KEY_KB);
-        const savedConfig = localStorage.getItem(STORAGE_KEY_CONFIG);
-
         if (savedKb) {
-            try { setDatabases(JSON.parse(savedKb)); } catch (e) { console.error(e); }
-        }
-
-        if (savedConfig) {
-            try {
-                const parsedConfig = JSON.parse(savedConfig);
-                setConfig(prev => ({ ...prev, ...parsedConfig }));
-                if (parsedConfig.defaultKbId) setActiveDbId(parsedConfig.defaultKbId);
+            try { 
+                const parsed = JSON.parse(savedKb);
+                setDatabases(parsed);
             } catch (e) { console.error(e); }
         }
     }, []);
 
     useEffect(() => {
-        if (!activeDbId && databases.length > 0) setActiveDbId(databases[0].id);
-    }, [databases]);
+        if (!activeDbId && databases.length > 0) {
+            if (config.defaultKbId && databases.find(d => d.id === config.defaultKbId)) {
+                setActiveDbId(config.defaultKbId);
+            } else {
+                setActiveDbId(databases[0].id);
+            }
+        }
+    }, [databases, config.defaultKbId]);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_KB, JSON.stringify(databases));
     }, [databases]);
 
     useEffect(() => {
-        const { admins, ...serializableConfig } = config;
-        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(serializableConfig));
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
     }, [config]);
 
     useEffect(() => {
@@ -71,18 +75,13 @@ const App: React.FC = () => {
     }, []);
 
     const handleLogin = (u: string, p: string) => {
-        // Priority: Environment Variables -> Config Admins
-        const envUser = process.env.ADMIN_USER || DEFAULT_USER;
-        const envPass = process.env.ADMIN_PASS || DEFAULT_PASS;
-
-        const isEnvValid = (u === envUser && p === envPass);
         const isConfigValid = config.admins.some(a => a.username === u && a.password === p);
 
-        if (isEnvValid || isConfigValid) {
+        if (isConfigValid) {
             setIsAuthenticated(true);
             setView(AppView.Admin);
         } else {
-            alert(lang === 'AR' ? "بيانات الدخول غير صحيحة" : "Invalid credentials");
+            alert(lang === 'AR' ? "بيانات الدخول غير صحيحة" : "Invalid credentials. Hint: Default is admin / admin123");
         }
     };
 
