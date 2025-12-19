@@ -2,18 +2,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   define: {
-    // This shims process.env for the browser so your geminiService.ts 
-    // can access process.env.API_KEY correctly on Vercel
-    'process.env': process.env
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY),
+    'process.env.ADMIN_USER': JSON.stringify(process.env.ADMIN_USER),
+    'process.env.ADMIN_PASS': JSON.stringify(process.env.ADMIN_PASS)
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     sourcemap: false,
-    minify: 'esbuild'
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', '@google/genai']
+        }
+      }
+    }
   }
 });
