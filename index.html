@@ -1,0 +1,63 @@
+
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.29.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Gemini RAG Enterprise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Arabic:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'Noto Sans Arabic', 'sans-serif'],
+            },
+            screens: {
+              'xs': '400px',
+            },
+            colors: {
+              'gem-onyx': '#f8fafc',
+              'gem-slate': '#ffffff',
+              'gem-mist': '#e2e8f0',
+              'gem-offwhite': '#1e293b',
+              'gem-teal': '#0d9488',
+              'gem-blue': '#2563eb',
+            },
+            keyframes: {
+              'progress-stripes': {
+                'from': { backgroundPosition: '1rem 0' },
+                'to': { backgroundPosition: '0 0' },
+              },
+            },
+            animation: {
+              'progress-stripes': 'progress-stripes 1s linear infinite',
+            },
+          }
+        }
+      }
+    </script>
+  
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-[#f8fafc] text-[#0f172a] selection:bg-blue-100">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
