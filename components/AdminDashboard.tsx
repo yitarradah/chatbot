@@ -42,6 +42,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
     useEffect(() => {
         if (renamingDbId && renameInputRef.current) {
             renameInputRef.current.focus();
+            renameInputRef.current.select();
         }
     }, [renamingDbId]);
 
@@ -70,9 +71,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
     };
 
     const confirmDbRename = (dbId: string) => {
-        if (!renamingName.trim()) return;
+        const trimmed = renamingName.trim();
+        if (!trimmed) return;
         setDatabases(prev => prev.map(db => 
-            db.id === dbId ? { ...db, name: renamingName.trim() } : db
+            db.id === dbId ? { ...db, name: trimmed } : db
         ));
         setRenamingDbId(null);
     };
@@ -406,31 +408,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
                                                         className="bg-white border-2 border-blue-500 rounded-lg px-3 py-1 text-sm md:text-lg font-black text-slate-900 w-full focus:outline-none shadow-inner"
                                                         onKeyDown={(e) => e.key === 'Enter' && confirmDbRename(db.id)}
                                                     />
-                                                    <button 
-                                                        onClick={() => confirmDbRename(db.id)}
-                                                        className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-sm shrink-0"
-                                                        title={lang === 'AR' ? 'تأكيد' : 'Confirm'}
-                                                    >
-                                                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                    </button>
-                                                    <button 
-                                                        onClick={cancelDbRename}
-                                                        className="p-1.5 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 transition-all shadow-sm shrink-0"
-                                                        title={lang === 'AR' ? 'إلغاء' : 'Cancel'}
-                                                    >
-                                                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                                    </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-2 min-w-0 group/name">
+                                                <div className="flex items-center gap-2 min-w-0">
                                                     <h3 className="text-lg md:text-xl font-black text-slate-900 leading-none truncate">{db.name}</h3>
-                                                    <button 
-                                                        onClick={() => startRenaming(db)}
-                                                        className="p-1 text-slate-300 hover:text-blue-500 opacity-0 group-hover/name:opacity-100 transition-all"
-                                                        title={lang === 'AR' ? 'إعادة تسمية' : 'Rename'}
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                    </button>
                                                     {config.defaultKbId === db.id && (
                                                         <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase shrink-0 tracking-tighter">{lang === 'AR' ? 'افتراضي' : 'Default'}</span>
                                                     )}
@@ -442,37 +423,65 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center space-x-2 md:space-x-4 rtl:space-x-reverse w-full md:w-auto shrink-0">
-                                    <button 
-                                        onClick={() => handleExportDatabase(db)}
-                                        className="p-2.5 bg-white border border-gray-100 rounded-xl text-blue-600 hover:bg-blue-50 transition-all shrink-0 shadow-sm"
-                                        title={lang === 'AR' ? 'تصدير قاعدة البيانات' : 'Export Database (JSON)'}
-                                    >
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/></svg>
-                                    </button>
-                                    <button 
-                                        onClick={() => setConfig(c => ({ ...c, defaultKbId: db.id }))}
-                                        className={`p-2.5 rounded-xl transition-all shrink-0 ${config.defaultKbId === db.id ? 'bg-amber-100 text-amber-600 shadow-inner' : 'bg-white border border-gray-100 text-slate-300 hover:text-amber-500'}`}
-                                        title={lang === 'AR' ? 'افتراضي' : "Set Default"}
-                                    >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                                    </button>
-                                    <select 
-                                        value={db.preferredModel}
-                                        onChange={(e) => setDatabases(prev => prev.map(d => d.id === db.id ? { ...d, preferredModel: e.target.value } : d))}
-                                        className="flex-1 md:flex-none bg-white border border-gray-200 rounded-xl text-[10px] md:text-xs font-black py-2.5 px-3 md:px-5 text-slate-600 focus:ring-2 focus:ring-blue-500 appearance-none text-center cursor-pointer shadow-sm"
-                                    >
-                                        <option value="gemini-flash-lite-latest">Flash Lite</option>
-                                        <option value="gemini-3-flash-preview">3 Flash</option>
-                                        <option value="gemini-3-pro-preview">3 Pro</option>
-                                    </select>
-                                    <button onClick={() => {
-                                        if (!confirm(lang === 'AR' ? 'حذف؟' : 'Delete?')) return;
-                                        setDatabases(prev => prev.filter(d => d.id !== db.id));
-                                        if (config.defaultKbId === db.id) setConfig(c => ({ ...c, defaultKbId: null }));
-                                    }} className="p-2.5 text-slate-300 hover:text-red-500 transition-colors shrink-0">
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
+                                <div className="flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse w-full md:w-auto shrink-0">
+                                    {renamingDbId === db.id ? (
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => confirmDbRename(db.id)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all shadow-md active:scale-95"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                <span className="text-xs font-black uppercase">{lang === 'AR' ? 'تأكيد' : 'Confirm'}</span>
+                                            </button>
+                                            <button 
+                                                onClick={cancelDbRename}
+                                                className="p-2.5 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-all shrink-0"
+                                                title={lang === 'AR' ? 'إلغاء' : 'Cancel'}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <button 
+                                                onClick={() => startRenaming(db)}
+                                                className="p-2.5 bg-white border border-gray-100 rounded-xl text-blue-600 hover:bg-blue-50 transition-all shrink-0 shadow-sm"
+                                                title={lang === 'AR' ? 'إعادة تسمية' : 'Rename Database'}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            </button>
+                                            <button 
+                                                onClick={() => handleExportDatabase(db)}
+                                                className="p-2.5 bg-white border border-gray-100 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0 shadow-sm"
+                                                title={lang === 'AR' ? 'تصدير قاعدة البيانات' : 'Export Database (JSON)'}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"/></svg>
+                                            </button>
+                                            <button 
+                                                onClick={() => setConfig(c => ({ ...c, defaultKbId: db.id }))}
+                                                className={`p-2.5 rounded-xl transition-all shrink-0 ${config.defaultKbId === db.id ? 'bg-amber-100 text-amber-600 shadow-inner' : 'bg-white border border-gray-100 text-slate-300 hover:text-amber-500'}`}
+                                                title={lang === 'AR' ? 'افتراضي' : "Set Default"}
+                                            >
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                                            </button>
+                                            <select 
+                                                value={db.preferredModel}
+                                                onChange={(e) => setDatabases(prev => prev.map(d => d.id === db.id ? { ...d, preferredModel: e.target.value } : d))}
+                                                className="flex-1 md:flex-none bg-white border border-gray-200 rounded-xl text-[10px] md:text-xs font-black py-2.5 px-3 md:px-5 text-slate-600 focus:ring-2 focus:ring-blue-500 appearance-none text-center cursor-pointer shadow-sm"
+                                            >
+                                                <option value="gemini-flash-lite-latest">Flash Lite</option>
+                                                <option value="gemini-3-flash-preview">3 Flash</option>
+                                                <option value="gemini-3-pro-preview">3 Pro</option>
+                                            </select>
+                                            <button onClick={() => {
+                                                if (!confirm(lang === 'AR' ? 'حذف؟' : 'Delete?')) return;
+                                                setDatabases(prev => prev.filter(d => d.id !== db.id));
+                                                if (config.defaultKbId === db.id) setConfig(c => ({ ...c, defaultKbId: null }));
+                                            }} className="p-2.5 text-slate-300 hover:text-red-500 transition-colors shrink-0">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
