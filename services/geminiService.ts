@@ -40,18 +40,18 @@ export async function askRAG(
     const context = kb.files.map(f => `--- DOCUMENT: ${f.name} ---\n${f.content}`).join('\n\n');
     
     const systemInstruction = `
-        You are an advanced Technical Support Specialist with deep reasoning capabilities.
+        You are an elite Technical Support Engineer and Document Analyst.
         Target Language: ${lang === 'AR' ? 'Arabic' : 'English'}.
         
-        DATA SOURCE:
+        CONTEXT DATA:
         ${context}
         
-        TASK:
-        1. Analyze the provided documents to answer the user's query.
-        2. Use your reasoning budget to cross-reference multiple parts of the documents if necessary.
-        3. STRICT: If information is missing, state that clearly in ${lang}.
-        4. CITATION: Always end relevant sentences with [Source: filename.ext].
-        5. FORMATTING: Use Markdown headers and bullet points for readability.
+        INSTRUCTIONS:
+        1. Base your answer ONLY on the provided documents.
+        2. If the answer is not in the documents, state that you cannot find it in the specific manuals provided.
+        3. Use Markdown for formatting (bolding, lists, headers).
+        4. CITATION RULE: Whenever you state a fact from a file, append [Source: filename] at the end of the sentence.
+        5. TONE: Professional, helpful, and concise.
     `;
 
     // Hierarchy fallback with Thinking Budget
@@ -65,15 +65,14 @@ export async function askRAG(
                 ],
                 config: {
                     systemInstruction,
-                    temperature: 0.2,
-                    // Enable high-performance reasoning
+                    temperature: 0.1, // Low temperature for high factual accuracy
                     thinkingConfig: { 
                         thinkingBudget: modelName.includes('pro') ? 32768 : 24576 
                     }
                 }
             });
 
-            // Estimated tokens based on response metadata if available, otherwise fallback
+            // Estimated tokens
             const inTokens = Math.floor((systemInstruction.length + query.length) / 4);
             const outTokens = Math.floor((response.text?.length || 0) / 4);
 
@@ -84,6 +83,7 @@ export async function askRAG(
                 outputTokens: outTokens
             };
         } catch (error: any) {
+            // If rate limited, try next model
             if (error?.status === 429 && modelName !== MODELS[MODELS.length - 1]) {
                 continue;
             }
@@ -91,5 +91,5 @@ export async function askRAG(
         }
     }
     
-    throw new Error("Reasoning engine failed to initialize.");
+    throw new Error("Analysis engine failed to initialize.");
 }

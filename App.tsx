@@ -3,7 +3,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-
 import React, { useState, useEffect } from 'react';
 import { KnowledgeBase, AppView, ApiStatus, Language, SystemConfig } from './types';
 import * as geminiService from './services/geminiService';
@@ -15,7 +14,6 @@ import LoginScreen from './components/LoginScreen';
 const STORAGE_KEY_KB = 'gemini_rag_kb';
 const STORAGE_KEY_CONFIG = 'gemini_rag_config';
 
-// Fallback credentials if Env Vars aren't set
 const DEFAULT_USER = 'admin';
 const DEFAULT_PASS = 'admin123';
 
@@ -37,27 +35,20 @@ const App: React.FC = () => {
         const savedConfig = localStorage.getItem(STORAGE_KEY_CONFIG);
 
         if (savedKb) {
-            try {
-                const parsedKb = JSON.parse(savedKb);
-                setDatabases(parsedKb);
-            } catch (e) { console.error(e); }
+            try { setDatabases(JSON.parse(savedKb)); } catch (e) { console.error(e); }
         }
 
         if (savedConfig) {
             try {
                 const parsedConfig = JSON.parse(savedConfig);
                 setConfig(prev => ({ ...prev, ...parsedConfig }));
-                if (parsedConfig.defaultKbId) {
-                    setActiveDbId(parsedConfig.defaultKbId);
-                }
+                if (parsedConfig.defaultKbId) setActiveDbId(parsedConfig.defaultKbId);
             } catch (e) { console.error(e); }
         }
     }, []);
 
     useEffect(() => {
-        if (!activeDbId && databases.length > 0) {
-            setActiveDbId(databases[0].id);
-        }
+        if (!activeDbId && databases.length > 0) setActiveDbId(databases[0].id);
     }, [databases]);
 
     useEffect(() => {
@@ -80,14 +71,14 @@ const App: React.FC = () => {
     }, []);
 
     const handleLogin = (u: string, p: string) => {
-        // Check against both environment variables and the local config list
+        // Priority: Environment Variables -> Config Admins
         const envUser = process.env.ADMIN_USER || DEFAULT_USER;
         const envPass = process.env.ADMIN_PASS || DEFAULT_PASS;
 
-        const isAdmin = (u === envUser && p === envPass) || 
-                        config.admins.some(admin => admin.username === u && admin.password === p);
+        const isEnvValid = (u === envUser && p === envPass);
+        const isConfigValid = config.admins.some(a => a.username === u && a.password === p);
 
-        if (isAdmin) {
+        if (isEnvValid || isConfigValid) {
             setIsAuthenticated(true);
             setView(AppView.Admin);
         } else {
@@ -102,7 +93,7 @@ const App: React.FC = () => {
 
     return (
         <div 
-            className={`min-h-screen bg-[#fcfdfe] flex flex-col font-sans transition-all duration-500 ${lang === 'AR' ? 'rtl' : 'ltr'}`} 
+            className={`min-h-screen bg-white flex flex-col font-sans transition-all duration-300 ${lang === 'AR' ? 'rtl' : 'ltr'}`} 
             dir={lang === 'AR' ? 'rtl' : 'ltr'}
         >
             <Navbar 
