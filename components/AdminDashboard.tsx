@@ -3,7 +3,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { KnowledgeBase, StoredFile, Language, SystemConfig, AdminUser } from '../types';
 import ProgressBar from './ProgressBar';
 
@@ -34,6 +34,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
     const [newAdminPass, setNewAdminPass] = useState('');
     const [newAdminEmail, setNewAdminEmail] = useState('');
 
+    // States for Database Renaming
+    const [renamingDbId, setRenamingDbId] = useState<string | null>(null);
+    const [renamingName, setRenamingName] = useState('');
+    const renameInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (renamingDbId && renameInputRef.current) {
+            renameInputRef.current.focus();
+        }
+    }, [renamingDbId]);
+
     const handleCreateDb = () => {
         if (!newDbName.trim()) return;
         const newDb: KnowledgeBase = {
@@ -50,6 +61,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
         if (!tempSystemName.trim()) return;
         setConfig(c => ({ ...c, systemName: tempSystemName }));
         alert(lang === 'AR' ? 'تم تحديث اسم النظام بنجاح' : 'System name updated successfully');
+    };
+
+    // DB Rename Logic
+    const startRenaming = (db: KnowledgeBase) => {
+        setRenamingDbId(db.id);
+        setRenamingName(db.name);
+    };
+
+    const confirmDbRename = (dbId: string) => {
+        if (!renamingName.trim()) return;
+        setDatabases(prev => prev.map(db => 
+            db.id === dbId ? { ...db, name: renamingName.trim() } : db
+        ));
+        setRenamingDbId(null);
+    };
+
+    const cancelDbRename = () => {
+        setRenamingDbId(null);
+        setRenamingName('');
     };
 
     const handleDownloadFile = (e: React.MouseEvent, file: StoredFile) => {
@@ -360,15 +390,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ databases, setDatabases
                     databases.map(db => (
                         <div key={db.id} className="bg-white rounded-2xl md:rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden animate-slide-up">
                             <div className="p-4 md:p-6 bg-slate-50/50 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                                <div className="flex items-center space-x-3 md:space-x-5 rtl:space-x-reverse min-w-0">
+                                <div className="flex items-center space-x-3 md:space-x-5 rtl:space-x-reverse min-w-0 flex-1">
                                     <div className="p-3 md:p-4 bg-white border border-gray-100 rounded-2xl shadow-sm text-blue-600 shrink-0">
                                         <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8-4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
                                     </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-lg md:text-xl font-black text-slate-900 leading-none truncate">{db.name}</h3>
-                                            {config.defaultKbId === db.id && (
-                                                <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase shrink-0 tracking-tighter">{lang === 'AR' ? 'افتراضي' : 'Default'}</span>
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {renamingDbId === db.id ? (
+                                                <div className="flex items-center gap-2 flex-1 animate-fade-in">
+                                                    <input 
+                                                        ref={renameInputRef}
+                                                        type="text"
+                                                        value={renamingName}
+                                                        onChange={(e) => setRenamingName(e.target.value)}
+                                                        className="bg-white border-2 border-blue-500 rounded-lg px-3 py-1 text-sm md:text-lg font-black text-slate-900 w-full focus:outline-none shadow-inner"
+                                                        onKeyDown={(e) => e.key === 'Enter' && confirmDbRename(db.id)}
+                                                    />
+                                                    <button 
+                                                        onClick={() => confirmDbRename(db.id)}
+                                                        className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all shadow-sm shrink-0"
+                                                        title={lang === 'AR' ? 'تأكيد' : 'Confirm'}
+                                                    >
+                                                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    </button>
+                                                    <button 
+                                                        onClick={cancelDbRename}
+                                                        className="p-1.5 bg-red-100 text-red-500 rounded-lg hover:bg-red-200 transition-all shadow-sm shrink-0"
+                                                        title={lang === 'AR' ? 'إلغاء' : 'Cancel'}
+                                                    >
+                                                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 min-w-0 group/name">
+                                                    <h3 className="text-lg md:text-xl font-black text-slate-900 leading-none truncate">{db.name}</h3>
+                                                    <button 
+                                                        onClick={() => startRenaming(db)}
+                                                        className="p-1 text-slate-300 hover:text-blue-500 opacity-0 group-hover/name:opacity-100 transition-all"
+                                                        title={lang === 'AR' ? 'إعادة تسمية' : 'Rename'}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                    </button>
+                                                    {config.defaultKbId === db.id && (
+                                                        <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase shrink-0 tracking-tighter">{lang === 'AR' ? 'افتراضي' : 'Default'}</span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                         <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
